@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air ifpshare to PDF Converter</title>
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <style>
+        .centered-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .progress-container {
+            position: relative;
+        }
+        .mdl-button {
+            width: 100%;
+        }
+        .mdl-button--loading:disabled {
+            cursor: not-allowed;
+            background-color: #ccc;
+        }
+        .mdl-spinner {
+            position: absolute;
+            top: 4px;
+            left: calc(50% - 14px);
+            display: none;
+        }
+        .mdl-spinner.is-active {
+            display: inline-block;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+        <header class="mdl-layout__header">
+            <div class="mdl-layout__header-row">
+                <span class="mdl-layout-title">Air ifpshare to PDF Converter</span>
+            </div>
+        </header>
+
+        <main class="mdl-layout__content">
+            <div class="centered-container">
+                <form id="url-form" action="/" method="POST">
+                    <div class="mdl-card mdl-shadow--4dp" style="padding: 20px;">
+                        <div class="mdl-card__title">
+                            <h2 class="mdl-card__title-text">Document URL to PDF</h2>
+                        </div>
+                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                            <input class="mdl-textfield__input" type="url" id="url" name="url">
+                            <label class="mdl-textfield__label" for="url">Enter URL</label>
+                        </div>
+                        <span id="error-message" class="error" style="display: none;">URL must be a valid ifpshare document</span>
+                        {% if error %}
+                        <span class="error">{{ error }}</span>
+                        {% endif %}
+                        <br>
+                        <div class="progress-container">
+                            <button id="submit-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="submit">
+                                Download PDF
+                            </button>
+                            <div id="progress-spinner" class="mdl-spinner mdl-js-spinner"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const urlField = document.getElementById('url');
+        const submitButton = document.getElementById('submit-button');
+        const spinner = document.getElementById('progress-spinner');
+        const errorMessage = document.getElementById('error-message');
+        
+        urlField.classList.remove('is-invalid');
+
+        document.getElementById('url-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            // Check if the URL is valid
+            const url = urlField.value;
+            if (!url.startsWith('https://air.ifpshare.com/documentPreview.html')) {
+                event.preventDefault();
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.classList.add('mdl-button--loading');
+            spinner.classList.add('is-active');
+            errorMessage.style.display = 'none';
+  
+            const formData = new FormData(this);
+            fetch('/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                const contentDisposition = response.headers.get('Content-Disposition');
+                if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+                    const matches = /filename="?([^"]+)"?/.exec(contentDisposition);
+                    if (matches[1]) { // Get the filename from the header
+                        downloadFilename = matches[1];
+                    }
+                }
+                return response.blob()
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = downloadFilename || 'document.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                submitButton.disabled = false;
+                submitButton.classList.remove('mdl-button--loading');
+                spinner.classList.remove('is-active');
+            });
+        });
+    </script>
+
+</body>
+</html>
