@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Air ifpshare to PDF Converter</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
@@ -62,7 +63,22 @@
         .paste-icon {
             color: #757575;
         }
-
+        .popup {
+            color: white;
+            padding: 16px;
+            position: fixed;
+            top: 84px;
+            right: 20px;
+            z-index: 1000;
+            border-radius: 4px;
+            display: none;
+        }
+        .error-popup {
+            background-color: #f44336;
+        }
+        .success-popup {
+            background-color: #4caf50;
+        }
         @media screen and (max-width: 480px) {
             .mdl-card {
                 width: 100%;
@@ -108,9 +124,6 @@
                                 <i class="material-icons" title="Paste from clipboard">content_paste</i>
                             </button>
                         </div>
-                        {% if error %}
-                        <span style="color: #D32F2F;">{{ error }}</span>
-                        {% endif %}
                         <div class="progress-container">
                             <button id="download-pdf-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="submit" name="action" value="download_pdf">
                                 Download PDF
@@ -129,6 +142,8 @@
         </main>
     </div>
 
+    <div id="popup" class="popup"></div>
+
     <script>
         const urlField = document.getElementById('url');
         const pdfButton = document.getElementById('download-pdf-button');
@@ -138,6 +153,27 @@
         const errorMessage = document.getElementById('error-message');
         const textField = document.querySelector('.mdl-textfield');
         const pasteIcon = document.querySelector('.paste-icon');
+        const popup = document.getElementById('popup');
+
+        function showError(message) {
+            popup.textContent = message;
+            popup.classList.add('error-popup');
+            popup.style.display = 'block';
+            setTimeout(() => {
+                popup.style.display = 'none';
+                popup.classList.remove('error-popup');
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            popup.textContent = message;
+            popup.classList.add('success-popup');
+            popup.style.display = 'block';
+            setTimeout(() => {
+                popup.style.display = 'none';
+                popup.classList.remove('success-popup');
+            }, 5000);
+        }
 
         pasteIcon.addEventListener('click', async () => {
             try {
@@ -187,6 +223,9 @@
                 body: formData
             })
             .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => { throw new Error(data.error); });
+                }
                 const contentDisposition = response.headers.get('Content-Disposition');
                 if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
                     const matches = /filename="?([^"]+)"?/.exec(contentDisposition);
@@ -205,9 +244,10 @@
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
+                showSuccess('Success! Your download should start shortly.');
             })
             .catch(error => {
-                console.error('Error:', error);
+                showError(error.message);
             })
             .finally(() => {
                 pdfButton.disabled = false;
