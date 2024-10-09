@@ -11,13 +11,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: calc(100vh - 64px);
         }
         .progress-container {
             position: relative;
-        }
-        .mdl-button {
-            width: 100%;
         }
         .mdl-button--loading:disabled {
             cursor: not-allowed;
@@ -33,7 +30,38 @@
             display: inline-block;
         }
         .error {
-            color: red;
+            color: #D32F2F;
+        }
+        .mdl-button {
+            width: 100%;
+        }
+        .mdl-textfield {
+            width: 100%;
+        }
+
+        .mdl-button--accent.mdl-button--raised {
+            background-color: #ff9702 !important;
+        }
+        .mdl-layout__header {
+            background-color: #fe5721 !important;
+        }
+
+        @media screen and (max-width: 480px) {
+            .mdl-card {
+                width: 100%;
+                height: 100%;
+                box-sizing: border-box;
+            }
+        }
+        @media screen and (max-width: 768px) {
+            .mdl-layout__header-row {
+                padding-left: 16px;
+            }
+        }
+        @media screen and (max-width: 1024px) {
+            .centered-container {
+                height: calc(100vh - 56px);
+            }
         }
     </style>
 </head>
@@ -48,11 +76,11 @@
 
         <main class="mdl-layout__content">
             <div class="centered-container">
-                <form id="url-form" action="/" method="POST">
-                    <div class="mdl-card mdl-shadow--4dp" style="padding: 20px;">
-                        <div class="mdl-card__title">
-                            <h2 class="mdl-card__title-text">Document URL to PDF</h2>
-                        </div>
+                <div class="mdl-card mdl-shadow--4dp" style="padding: 20px;">
+                    <div class="mdl-card__title">
+                        <h2 class="mdl-card__title-text">Document URL to PDF</h2>
+                    </div>    
+                    <form id="url-form" action="/" method="POST">
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                             <input class="mdl-textfield__input" type="url" id="url" name="url">
                             <label class="mdl-textfield__label" for="url">Enter URL</label>
@@ -68,8 +96,8 @@
                             </button>
                             <div id="progress-spinner" class="mdl-spinner mdl-js-spinner"></div>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </main>
     </div>
