@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Air ifpshare to PDF Converter</title>
     <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
     <style>
         .centered-container {
@@ -29,16 +30,20 @@
         .mdl-spinner.is-active {
             display: inline-block;
         }
-        .error {
-            color: #D32F2F;
-        }
-        .mdl-button {
+        .mdl-button:not(.mdl-button--icon) {
             width: 100%;
         }
         .mdl-textfield {
             width: 100%;
+            flex-grow: 1;
         }
-
+        .textfield-container {
+            display: flex;
+            align-items: center;
+        }
+        .mdl-textfield.is-focused + .paste-icon {
+            color: #ff9702 !important;
+        }
         .mdl-button--accent.mdl-button--raised {
             background-color: #ff9702 !important;
         }
@@ -47,6 +52,15 @@
         }
         .mdl-layout__header {
             background-color: #fe5721 !important;
+        }
+        .mdl-textfield--floating-label.is-focused .mdl-textfield__label, .mdl-textfield--floating-label.is-dirty .mdl-textfield__label, .mdl-textfield--floating-label.has-placeholder .mdl-textfield__label {
+            color: #ff9702 !important;
+        }
+        .mdl-textfield__label:after {
+            background-color: #ff9702 !important;
+        }
+        .paste-icon {
+            color: #757575;
         }
 
         @media screen and (max-width: 480px) {
@@ -82,17 +96,21 @@
                 <div class="mdl-card mdl-shadow--4dp" style="padding: 20px;">
                     <div class="mdl-card__title">
                         <h2 class="mdl-card__title-text">Document URL to PDF</h2>
-                    </div>    
+                    </div>
                     <form id="url-form" action="/" method="POST">
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <input class="mdl-textfield__input" type="url" id="url" name="url">
-                            <label class="mdl-textfield__label" for="url">Enter URL</label>
+                        <div class="textfield-container">
+                            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                                <input class="mdl-textfield__input" type="url" id="url" name="url">
+                                <label class="mdl-textfield__label" for="url">Enter URL</label>
+                                <span class="mdl-textfield__error">URL must be a valid ifpshare document!</span>
+                            </div>
+                            <button class="paste-icon mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon" type="button">
+                                <i class="material-icons" title="Paste from clipboard">content_paste</i>
+                            </button>
                         </div>
-                        <span id="error-message" class="error" style="display: none;">URL must be a valid ifpshare document</span>
                         {% if error %}
-                        <span class="error">{{ error }}</span>
+                        <span style="color: #D32F2F;">{{ error }}</span>
                         {% endif %}
-                        <br>
                         <div class="progress-container">
                             <button id="download-pdf-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="submit" name="action" value="download_pdf">
                                 Download PDF
@@ -118,25 +136,41 @@
         const pdfSpinner = document.getElementById('progress-spinner-pdf');
         const zipSpinner = document.getElementById('progress-spinner-zip');
         const errorMessage = document.getElementById('error-message');
-        
-        urlField.classList.remove('is-invalid');
+        const textField = document.querySelector('.mdl-textfield');
+        const pasteIcon = document.querySelector('.paste-icon');
+
+        pasteIcon.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                urlField.value = text;
+                textField.classList.add('is-dirty');
+                validateURL();
+            } catch (err) {
+                console.error('Failed to read clipboard contents: ', err);
+            }
+        });
+
+        // Check if the URL is valid
+        function validateURL() {
+            const url = urlField.value;
+            if (url.startsWith('https://air.ifpshare.com/documentPreview.html')) {
+                textField.classList.remove('is-invalid');
+            } else {
+                textField.classList.add('is-invalid');
+            }
+        }
+        urlField.addEventListener('input', validateURL);
 
         document.getElementById('url-form').addEventListener('submit', function (event) {
             event.preventDefault();
 
-            // Check if the URL is valid
-            const url = urlField.value;
-            if (!url.startsWith('https://air.ifpshare.com/documentPreview.html')) {
-                event.preventDefault();
-                errorMessage.style.display = 'block';
+            validateURL();
+            if (textField.classList.contains('is-invalid'))
                 return;
-            }
 
             const formData = new FormData(event.target, event.submitter);
             pdfButton.disabled = true;
             zipButton.disabled = true;
-            console.log(formData.get('action'));
-            console.log(formData.get('url'));
             if (formData.get('action') === 'download_pdf') {
                 pdfButton.classList.add('mdl-button--loading');
                 pdfSpinner.classList.add('is-active');
@@ -146,7 +180,7 @@
                 zipSpinner.classList.add('is-active');
                 var downloadFilename = 'images.zip';
             }
-            errorMessage.style.display = 'none';
+            textField.classList.remove('is-invalid');
   
             fetch('/', {
                 method: 'POST',
