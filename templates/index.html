@@ -42,6 +42,9 @@
         .mdl-button--accent.mdl-button--raised {
             background-color: #ff9702 !important;
         }
+        .mdl-button--accent.mdl-button--raised[disabled] {
+            background-color: rgba(0, 0, 0, .12) !important;
+        }
         .mdl-layout__header {
             background-color: #fe5721 !important;
         }
@@ -91,10 +94,16 @@
                         {% endif %}
                         <br>
                         <div class="progress-container">
-                            <button id="submit-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="submit">
+                            <button id="download-pdf-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="submit" name="action" value="download_pdf">
                                 Download PDF
                             </button>
-                            <div id="progress-spinner" class="mdl-spinner mdl-js-spinner"></div>
+                            <div id="progress-spinner-pdf" class="mdl-spinner mdl-js-spinner"></div>
+                        </div>
+                        <div class="progress-container" style="margin-top: 10px;">
+                            <button id="download-zip-button" class="mdl-button mdl-js-button mdl-js-ripple-effect" type="submit" name="action" value="download_zip">
+                                Download Images
+                            </button>
+                            <div id="progress-spinner-zip" class="mdl-spinner mdl-js-spinner"></div>
                         </div>
                     </form>
                 </div>
@@ -104,8 +113,10 @@
 
     <script>
         const urlField = document.getElementById('url');
-        const submitButton = document.getElementById('submit-button');
-        const spinner = document.getElementById('progress-spinner');
+        const pdfButton = document.getElementById('download-pdf-button');
+        const zipButton = document.getElementById('download-zip-button');
+        const pdfSpinner = document.getElementById('progress-spinner-pdf');
+        const zipSpinner = document.getElementById('progress-spinner-zip');
         const errorMessage = document.getElementById('error-message');
         
         urlField.classList.remove('is-invalid');
@@ -121,12 +132,22 @@
                 return;
             }
 
-            submitButton.disabled = true;
-            submitButton.classList.add('mdl-button--loading');
-            spinner.classList.add('is-active');
+            const formData = new FormData(event.target, event.submitter);
+            pdfButton.disabled = true;
+            zipButton.disabled = true;
+            console.log(formData.get('action'));
+            console.log(formData.get('url'));
+            if (formData.get('action') === 'download_pdf') {
+                pdfButton.classList.add('mdl-button--loading');
+                pdfSpinner.classList.add('is-active');
+                var downloadFilename = 'document.pdf';
+            } else {
+                zipButton.classList.add('mdl-button--loading');
+                zipSpinner.classList.add('is-active');
+                var downloadFilename = 'images.zip';
+            }
             errorMessage.style.display = 'none';
   
-            const formData = new FormData(this);
             fetch('/', {
                 method: 'POST',
                 body: formData
@@ -145,7 +166,7 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = downloadFilename || 'document.pdf';
+                a.download = downloadFilename;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
@@ -155,9 +176,12 @@
                 console.error('Error:', error);
             })
             .finally(() => {
-                submitButton.disabled = false;
-                submitButton.classList.remove('mdl-button--loading');
-                spinner.classList.remove('is-active');
+                pdfButton.disabled = false;
+                zipButton.disabled = false;
+                pdfButton.classList.remove('mdl-button--loading');
+                zipButton.classList.remove('mdl-button--loading');
+                pdfSpinner.classList.remove('is-active');
+                zipSpinner.classList.remove('is-active');
             });
         });
     </script>
